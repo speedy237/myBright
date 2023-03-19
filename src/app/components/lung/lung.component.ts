@@ -13,7 +13,6 @@ import { ExamService } from 'src/app/services/exam.service';
 //import * as jsPDF from 'jspdf';
 import jsPDF from 'jspdf';
 import { DatePipe } from '@angular/common';
-
 import axios from 'axios';
 @Component({
   selector: 'app-lung',
@@ -30,8 +29,9 @@ export class LungComponent implements OnInit {
   exam=new Exam();
   disease!:string;
   date=new Date();
+  pdfDataUrl!:any
+  pdfUrl!: string;
   
-
   constructor(private service:ImageClassificationService,private http:HttpClient,private router:ActivatedRoute,private userService:UserService,private patientSerice:PatientService,private examService:ExamService) { }
 
   ngOnInit(): void {
@@ -46,6 +46,9 @@ export class LungComponent implements OnInit {
   onFileSelected(event: any) {
 
     this.file= <File>event.target.files[0];
+    const vmName = 'bright-inference';
+    const resourceGroupName = 'bright-inference_group';
+    
     console.log(this.file.name);
   }
   onSubmit() {
@@ -65,8 +68,6 @@ export class LungComponent implements OnInit {
     a=data.idP
 
     })
-    
-    
     //console.log("value before insertion ");
     const exi ={};
     const ex={
@@ -94,56 +95,71 @@ export class LungComponent implements OnInit {
     console.log("begind segmentation");
     this.service.segmentedImage(this.file).subscribe(data=>{
       console.log(data);
-      const image="http://13.82.224.92:8000/results/"+data.message;
-     generatePDF(image,this.patient,this.user,this.exam.images,this.patient.age,randomStr)
+      const image="https://13.82.224.92:8000/results/"+data.message;
+      
+      const pdfDoc=this.generatePDF(image,this.patient,this.user,this.exam.images,this.patient.age,randomStr)
+
+      const pdfData = pdfDoc.output('blob');
+      this.pdfDataUrl = URL.createObjectURL(pdfData);
     });
-    
-  }
-  startVM(){
-    
-  }
-
-}
-
-
-export function generatePDF(image:any,patient:Patient,user:User,typeImage:string,age:number,disease:string) {
-  const doc = new jsPDF();
-
-    const logo = '../../../assets/Blue, white and green Medical care logo.png';
-    doc.addImage(logo, 'PNG', (doc.internal.pageSize.width / 2) - 20, 10, 40, 40);
-
-    let startY = 60;
-    let lineHeight = 10;
-
-    doc.setFontSize(12);
-    doc.text(`Laboratory: ${user.laboratoire}`, 10, startY);
-    doc.text(`Techician: ${user.grade} ${user.nom} ${user.prenom}`, 10, startY + lineHeight);
-    doc.text(`Check On: ${new Date()}`, 10, startY + lineHeight * 2);
-    doc.text(`Information about Patient`, 10, startY + lineHeight * 3);
-    doc.text(`Name: ${patient.nom} ${patient.prenom}`, 10, startY + lineHeight * 4);
-    doc.text(`Old: ${age} years`, 10, startY + lineHeight * 5);
-    doc.text(`Sexe: ${patient.sexe}`, 10, startY + lineHeight * 6);
-    doc.text(`Input Image: ${typeImage}`, 10, startY + lineHeight * 7);
-    doc.text(`Disease: ${disease}`, 10, startY + lineHeight * 8);
-    doc.text(`Symptomes: Toux, Cephales , Fievre , Ecoulement nasal, etc`, 10, startY + lineHeight * 9);
-    doc.text(``, 10, startY + lineHeight * 10);
-    doc.text(``, 10, startY + lineHeight * 11);
-
-    //doc.addImage(image, 'PNG', 60, startY + lineHeight * 4, 100, 100);
-    doc.setPage(doc.getNumberOfPages());
-    doc.addImage(image, 'PNG', 60, 150, 100, 100);
-
-    //doc.text('More Explanation:', 10, startY + lineHeight * 14);
-
      
-    // Add footer with right-aligned copyright
-    doc.setFontSize(10);
-    doc.text('© 2023 Bright-Medicals', doc.internal.pageSize.width - 45, doc.internal.pageSize.height - 10);
-
-    // Save the document with the patient's name
-    doc.save(`${patient.nom} ${patient.prenom}.pdf`);
    
+  }
+  generatePDF(image:any,patient:Patient,user:User,typeImage:string,age:number,disease:string) {
+    const doc = new jsPDF();
   
-   
+      const logo = '../../../assets/Blue, white and green Medical care logo.png';
+      doc.addImage(logo, 'PNG', (doc.internal.pageSize.width / 2) - 20, 10, 40, 40);
+  
+      let startY = 60;
+      let lineHeight = 10;
+  
+      doc.setFontSize(12);
+      doc.text(`Laboratory: ${user.laboratoire}`, 10, startY);
+      doc.text(`Techician: ${user.grade} ${user.nom} ${user.prenom}`, 10, startY + lineHeight);
+      doc.text(`Check On: ${new Date()}`, 10, startY + lineHeight * 2);
+      doc.text(`Information about Patient`, 10, startY + lineHeight * 3);
+      doc.text(`Name: ${patient.nom} ${patient.prenom}`, 10, startY + lineHeight * 4);
+      doc.text(`Old: ${age} years`, 10, startY + lineHeight * 5);
+      doc.text(`Sexe: ${patient.sexe}`, 10, startY + lineHeight * 6);
+      doc.text(`Input Image: ${typeImage}`, 10, startY + lineHeight * 7);
+      doc.text(`Disease: ${disease}`, 10, startY + lineHeight * 8);
+      doc.text(`Symptomes: Toux, Cephales , Fievre , Ecoulement nasal, etc`, 10, startY + lineHeight * 9);
+      doc.text(``, 10, startY + lineHeight * 10);
+      doc.text(``, 10, startY + lineHeight * 11);
+  
+      //doc.addImage(image, 'PNG', 60, startY + lineHeight * 4, 100, 100);
+      doc.setPage(doc.getNumberOfPages());
+      doc.addImage(image, 'PNG', 60, 150, 100, 100);
+  
+      //doc.text('More Explanation:', 10, startY + lineHeight * 14);
+  
+       
+      // Add footer with right-aligned copyright
+      doc.setFontSize(10);
+      doc.text('© 2023 Bright-Medicals', doc.internal.pageSize.width - 45, doc.internal.pageSize.height - 10);
+  
+      // Save the document with the patient's name
+      const filename=`${patient.nom} ${patient.prenom}.pdf`
+      doc.save(filename);
+      // Create a FormData object to send the file
+      const bytes = doc.output('arraybuffer');
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const file = new File([blob], `${patient.nom} ${patient.prenom}.pdf`, { type: 'application/pdf' });
+      const formData = new FormData();
+      formData.append('attachment',file, file.name);
+
+      // Send the file to the API endpoint
+      this.http.post('https://mybright-api.herokuapp.com/report?adr='+user.login, formData).subscribe(data=>{
+        console.log(data);
+      });
+      
+      return doc;
+     
+  }
+
 }
+
+
+
  

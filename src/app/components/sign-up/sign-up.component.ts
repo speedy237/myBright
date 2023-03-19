@@ -21,6 +21,10 @@ export class SignUpComponent implements OnInit {
     this.http.post("https://mybright-api.herokuapp.com/user",this.user).subscribe(data=>{
       console.log(data);
     })
+    this.http.post("https://mybright-api.herokuapp.com/mail",this.user).subscribe(data=>{
+      console.log(data);
+    })
+    
     this.route.navigate(['/sign-in'])
   }
   

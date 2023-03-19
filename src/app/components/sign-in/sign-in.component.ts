@@ -27,6 +27,13 @@ export class SignInComponent implements OnInit {
     this.http.post<User>('https://mybright-api.herokuapp.com/login',this.credential).subscribe(user =>{
         if(user){
           this.router.navigate(['/home/'+user.idU])
+          const requestOptions = {
+            headers: { 'accept': 'application/json' },
+            body: ''
+          };
+          this.http.post('https://mybright-api.herokuapp.com/start?vm_name=bright-inference&resource_group_name=bright-inference_group', requestOptions).subscribe(response => {
+            console.log(response);
+          });
         }
          
       },(error:HttpErrorResponse)=>{
